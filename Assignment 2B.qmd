@@ -1,0 +1,28 @@
+---
+title: "Assignment 2B"
+author: "Khandker Qaiduzzaman"
+format: html
+editor: visual
+---
+
+# Objective
+
+Analyze the performance of a binary classification model and develop intuition for how probability thresholds affect model evaluation metrics.
+
+# Approach
+
+### Dataset description
+
+The given dataset penguin_predictions.csv is the prediction output of a classification model that has three columns:
+
+-   .pred_female – Model-predicted probability that the observation belongs to the “female” class
+
+-   .pred_class – Predicted class label (1 if .pred_female \> 0.5, otherwise 0)
+
+-   sex – Actual class label used during model training
+
+### Anticipated Data Challenges
+
+This dataset is very straight forward and there is no missing values observed. The main challenges of this assignment is the model evaluation. Proper understanding of the evaluation metrica ia essential for this problem.
+
+Source: <https://raw.githubusercontent.com/NafeesKhandker/Penguin-Prediction-Classification-Model-Evaluation/refs/heads/main/penguin_predictions.csv>
