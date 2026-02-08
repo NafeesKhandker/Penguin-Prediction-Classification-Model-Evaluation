@@ -23,6 +23,186 @@ The given dataset penguin_predictions.csv is the prediction output of a classifi
 
 ### Anticipated Data Challenges
 
-This dataset is very straight forward and there is no missing values observed. The main challenges of this assignment is the model evaluation. Proper understanding of the evaluation metrica ia essential for this problem.
+This dataset is very straight forward and there is no missing values observed. The main challenges of this assignment is the model evaluation. Proper understanding of the evaluation metrics is essential for this problem.
 
 Source: <https://raw.githubusercontent.com/NafeesKhandker/Penguin-Prediction-Classification-Model-Evaluation/refs/heads/main/penguin_predictions.csv>
+
+### Null Error Rate Calculation
+
+I am plotting a bar chart using ggplot that shows the distribution of the actual class (sex). The plot shows that there are 39 females and 54 male observations in the dataset. In total, there are 93 observations.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+url <- "https://raw.githubusercontent.com/NafeesKhandker/Penguin-Prediction-Classification-Model-Evaluation/refs/heads/main/penguin_predictions.csv"
+
+df <- read_csv(
+  file = url,
+  show_col_types = FALSE,
+  progress = FALSE
+)
+
+ggplot(df, aes(x = sex, fill = sex)) +
+  geom_bar(width = 0.6) +
+  geom_text(
+    stat = "count",
+    aes(label = ..count..),
+    vjust = -0.3,
+    size = 4
+  ) +
+  scale_fill_manual(values = c("female" = "pink", "male" = "skyblue")) +
+  labs(
+    title = "Distribution of Actual Penguin Sex",
+    x = "Sex",
+    y = "Count",
+    fill = "Sex"
+  ) +
+  theme_minimal()
+
+```
+
+I am calculating the proportion for female (42%) and male (58%), and the null error rate to be 42%. The male is the majority class here and a null model would predict "male" for every observation. If we ignored all features and always predicted “male,” we would be wrong about 42% of the time.
+
+```{r}
+# Count how many penguins are in each class
+sex_counts <- table(df$sex)
+sex_counts
+
+# Compute proportion of each class
+sex_props <- sex_counts / sum(sex_counts)
+sex_props
+
+# Find the proportion of the majority class
+majority_class_rate <- max(sex_props)
+
+# Calculate the null error rate
+null_error_rate <- 1 - majority_class_rate
+null_error_rate
+```
+
+The null error rate is important because it provides a baseline for model evaluation. Any meaningful classification model must achieve an error rate lower than 42% or accuracy higher than 58%. If a model performs worse than this baseline, it is no better than naive guessing based solely on class frequency. This is especially important in classification problems, where accuracy alone can be misleading when classes are imbalanced. In this dataset, the class imbalance is moderate, so comparing model performance against the null error rate helps determine whether the model is truly learning patterns beyond simple majority-class prediction.
+
+### Confusion Matrices at Threshold 0.2
+
+In this analysis, “female” is treated as the positive class and “male” as the negative class. The model outputs probabilities (`.pred_female`), which must be converted into class predictions using a threshold. Changing the threshold changes what the model considers a positive prediction.
+
+```{r}
+# Threshold = 0.2 (Low Threshold)
+df$pred_02 <- ifelse(df$.pred_female > 0.2, "female", "male")
+
+# Look at predictions
+table(df$pred_02)
+```
+
+I am presenting the confusion matrix where TP = 37, FN = 6, FP = 2 and TN = 48. The model captures most females. Only a few males are mislabeled as female. The model is biased toward predicting the positive class, but still performs well. In practical terms, the model is saying: “If there’s even a modest chance this penguin is female, I’ll call it female.”
+
+```{r}
+TP_02 <- sum(df$pred_02 == "female" & df$sex == "female")
+FP_02 <- sum(df$pred_02 == "female" & df$sex == "male")
+TN_02 <- sum(df$pred_02 == "male"   & df$sex == "male")
+FN_02 <- sum(df$pred_02 == "male"   & df$sex == "female")
+
+matrix(
+  c(TP_02, FP_02,
+    FN_02, TN_02),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    Actual = c("Female", "Male"),
+    Predicted = c("Female", "Male")
+  )
+)
+```
+
+### Confusion Matrices at Threshold 0.5
+
+I am setting the threshold 0.5 and creating the predicted classes.
+
+```{r}
+df$pred_05 <- ifelse(df$.pred_female > 0.5, "female", "male")
+table(df$pred_05)
+```
+
+A threshold of 0.5 means the model predicts female only when it is more likely than not.The model becomes more conservative about predicting female. False positives decrease slightly (fewer males mislabeled as female). False negatives also decrease, meaning the model still identifies most females. Errors are now more evenly balanced between the two classes.
+
+```{r}
+TP_05 <- sum(df$pred_05 == "female" & df$sex == "female")
+FP_05 <- sum(df$pred_05 == "female" & df$sex == "male")
+TN_05 <- sum(df$pred_05 == "male"   & df$sex == "male")
+FN_05 <- sum(df$pred_05 == "male"   & df$sex == "female")
+
+matrix(
+  c(TP_05, FP_05,
+    FN_05, TN_05),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    Actual = c("Female", "Male"),
+    Predicted = c("Female", "Male")
+  )
+)
+
+```
+
+### Confusion Matrices at Threshold 0.8
+
+I am setting the threshold 0.8 and creating the predicted classes.
+
+```{r}
+df$pred_08 <- ifelse(df$.pred_female > 0.8, "female", "male")
+table(df$pred_08)
+```
+
+A threshold of 0.8 is conservative — the model predicts female only when it is very confident. The model is selective about predicting female. False positives are kept low, since only high-confidence predictions are labeled female. In practical terms, the model is saying: “I will only call a penguin female if I’m almost sure.”
+
+```{r}
+TP_08 <- sum(df$pred_08 == "female" & df$sex == "female")
+FP_08 <- sum(df$pred_08 == "female" & df$sex == "male")
+TN_08 <- sum(df$pred_08 == "male"   & df$sex == "male")
+FN_08 <- sum(df$pred_08 == "male"   & df$sex == "female")
+
+matrix(
+  c(TP_08, FP_08,
+    FN_08, TN_08),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    Actual = c("Female", "Male"),
+    Predicted = c("Female", "Male")
+  )
+)
+```
+
+### Result Comparison
+
+Accuracy is the fraction of observations where the model correctly identified the penguin’s sex (both females and males).
+
+Out of all penguins predicted to be female, precision tells us how many were actually female.
+
+Out of all penguins that are truly female, recall tells us how many the model successfully detected.
+
+The F1 score is the harmonic mean of precision and recall. It balances the tradeoff between false positives and false negatives.
+
+```{r}
+metrics <- data.frame(
+  Threshold = c(0.2, 0.5, 0.8),
+  TP = c(37, 36, 36),
+  FP = c(2, 3, 3),
+  TN = c(48, 51, 52),
+  FN = c(6, 3, 2)
+)
+
+metrics$Accuracy <- (metrics$TP + metrics$TN) / (metrics$TP + metrics$FP + metrics$TN + metrics$FN)
+metrics$Precision <- metrics$TP / (metrics$TP + metrics$FP)
+metrics$Recall <- metrics$TP / (metrics$TP + metrics$FN)
+metrics$F1 <- 2 * (metrics$Precision * metrics$Recall) / (metrics$Precision + metrics$Recall)
+
+metrics[, c("Threshold", "Accuracy", "Precision", "Recall", "F1")]
+```
+
+### Threshold Use Cases
+
+A 0.2 threshold is appropriate in situations where missing a positive case is costly, and it is acceptable to tolerate some false positives. For example, early-stage disease screening e.g., breast cancer pre-screening or infectious disease detection. False negatives (missing a sick patient) can have serious consequences. False positives (flagging a healthy patient) are acceptable because follow-up tests can confirm the diagnosis.
+
+A 0.8 threshold is appropriate in situations where false positives are costly, and decisions must be made only when the model is very confident. Real-world example: automated fraud blocking. In financial fraud detection, automatically blocking a legitimate transaction can cause customer frustration and financial loss. Therefore, actions should only be taken when there is high confidence that fraud is occurring.
